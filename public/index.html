@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StoryFrame AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       DESIGN SYSTEM — Cinematic Dark Theme
+       Palette: deep charcoal + amber gold + warm cream
+    ══════════════════════════════════════════════ */
+    :root {
+      --bg:        #0d0c0a;
+      --surface:   #141210;
+      --border:    #2a2520;
+      --amber:     #d4935a;
+      --amber-dim: #8a5e34;
+      --cream:     #e8e0d0;
+      --muted:     #6b6358;
+      --danger:    #c0614a;
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-mono:  'DM Mono', 'Courier New', monospace;
+      --radius:     6px;
+      --glow:       0 0 40px rgba(212, 147, 90, 0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: var(--font-serif);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 1.5rem 4rem;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      width: 100%; max-width: 860px;
+      padding: 3.5rem 0 2rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .logo-line {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--amber-dim);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 300;
+      font-style: italic;
+      color: var(--cream);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span {
+      color: var(--amber);
+      font-weight: 600;
+      font-style: normal;
+    }
+
+    .tagline {
+      font-size: 1rem;
+      color: var(--muted);
+      margin-top: 1rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+    }
+
+    .divider {
+      width: 60px; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--amber), transparent);
+      margin: 2rem auto 0;
+    }
+
+    /* ── Main layout ── */
+    main {
+      width: 100%; max-width: 860px;
+      display: flex; flex-direction: column;
+      gap: 2rem;
+      position: relative; z-index: 1;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      transition: border-color 0.3s;
+    }
+
+    .card:focus-within { border-color: var(--amber-dim); }
+
+    .card-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: var(--amber-dim);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    .card-label::before {
+      content: '';
+      display: inline-block; width: 20px; height: 1px;
+      background: var(--amber-dim);
+    }
+
+    /* ── Input area ── */
+    .prompt-wrap { display: flex; flex-direction: column; gap: 1.2rem; }
+
+    textarea {
+      background: #0a0908;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--cream);
+      font-family: var(--font-serif);
+      font-size: 1.15rem;
+      font-weight: 300;
+      line-height: 1.6;
+      padding: 1.2rem 1.4rem;
+      resize: vertical; min-height: 110px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    textarea::placeholder { color: var(--muted); font-style: italic; }
+    textarea:focus { border-color: var(--amber-dim); box-shadow: var(--glow); }
+
+    /* ── Buttons ── */
+    .btn-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    button {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0.85rem 1.8rem;
+      border-radius: var(--radius);
+      cursor: pointer;
+      border: 1px solid;
+      transition: all 0.25s;
+      display: flex; align-items: center; gap: 0.6rem;
+      white-space: nowrap;
+    }
+
+    button:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: #0d0c0a;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #e8a870;
+      border-color: #e8a870;
+      box-shadow: 0 0 24px rgba(212,147,90,0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border-color: var(--border);
+      color: var(--cream);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--amber-dim);
+      color: var(--amber);
+    }
+
+    .btn-danger {
+      background: transparent;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(192,97,74,0.1); }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.3);
+      border-top-color: #0d0c0a;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn-primary.loading .spinner { display: block; }
+    .btn-primary.loading .btn-icon { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Status bar ── */
+    .status-bar {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      padding: 0.6rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      color: var(--muted);
+      display: none;
+      align-items: center; gap: 0.5rem;
+    }
+    .status-bar.show { display: flex; }
+    .status-bar.warn { border-color: var(--amber-dim); color: var(--amber); }
+    .status-bar.error { border-color: var(--danger); color: var(--danger); }
+
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ── Story display ── */
+    .story-panel { display: none; }
+    .story-panel.show { display: block; }
+
+    .story-title {
+      font-size: 2.2rem;
+      font-weight: 600;
+      font-style: italic;
+      color: var(--amber);
+      margin-bottom: 1.2rem;
+      line-height: 1.2;
+    }
+
+    .story-body {
+      font-size: 1.1rem;
+      font-weight: 300;
+      line-height: 1.85;
+      color: var(--cream);
+      white-space: pre-line;
+    }
+
+    .story-meta {
+      margin-top: 1.4rem;
+      display: flex; gap: 0.6rem; flex-wrap: wrap;
+    }
+
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .tag.mood {
+      border-color: var(--amber-dim);
+      color: var(--amber);
+    }
+
+    /* ── Canvas section ── */
+    .canvas-wrap {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #060504;
+      border: 1px solid var(--border);
+    }
+
+    canvas {
+      display: block; width: 100%;
+      aspect-ratio: 16/9;
+    }
+
+    .canvas-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-serif);
+      font-style: italic;
+      color: var(--muted);
+      font-size: 1.1rem;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+
+    .rec-badge {
+      position: absolute; top: 1rem; right: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      background: var(--danger);
+      color: white;
+      padding: 0.3rem 0.7rem;
+      border-radius: 20px;
+      display: none;
+      align-items: center; gap: 0.4rem;
+    }
+    .rec-badge.show { display: flex; }
+
+    .rec-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: white;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── Progress bar ── */
+    .progress-wrap { display: none; }
+    .progress-wrap.show { display: block; }
+    .progress-track {
+      height: 2px; background: var(--border);
+      border-radius: 2px; overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+    .progress-fill {
+      height: 100%; width: 0%;
+      background: var(--amber);
+      transition: width 0.1s;
+    }
+    .progress-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 4rem;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ HEADER ════════════════════════════════════════════ -->
+  <header>
+    <p class="logo-line">✦ &nbsp; AI Visual Storytelling &nbsp; ✦</p>
+    <h1>Story<span>Frame</span></h1>
+    <p class="tagline">Enter a prompt. Witness the story. Capture the moment.</p>
+    <div class="divider"></div>
+  </header>
+
+  <!-- ═══ MAIN ══════════════════════════════════════════════ -->
+  <main>
+
+    <!-- Prompt Input -->
+    <div class="card">
+      <p class="card-label">Story Prompt</p>
+      <div class="prompt-wrap">
+        <textarea
+          id="promptInput"
+          placeholder="A lighthouse keeper discovers the ocean is sending her messages written in foam…"
+          maxlength="400"
+        ></textarea>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="generateBtn">
+            <span class="btn-icon">✦</span>
+            <span class="spinner"></span>
+            Generate Story
+          </button>
+          <button class="btn-secondary" id="clearBtn">
+            ↺ &nbsp; Clear
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-dot"></span>
+      <span id="statusText">—</span>
+    </div>
+
+    <!-- Story Panel -->
+    <div class="card story-panel" id="storyPanel">
+      <p class="card-label">Generated Story</p>
+      <h2 class="story-title" id="storyTitle">—</h2>
+      <p class="story-body" id="storyBody">—</p>
+      <div class="story-meta" id="storyMeta"></div>
+    </div>
+
+    <!-- Canvas / Animation -->
+    <div class="card">
+      <p class="card-label">Live Visualisation</p>
+
+      <div class="canvas-wrap">
+        <canvas id="storyCanvas" width="1280" height="720"></canvas>
+        <div class="canvas-overlay" id="canvasOverlay">Awaiting your story…</div>
+        <div class="rec-badge" id="recBadge">
+          <span class="rec-dot"></span> REC
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-wrap" id="progressWrap" style="margin-top:1rem">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <p class="progress-label" id="progressLabel">Recording…</p>
+      </div>
+
+      <!-- Buttons -->
+      <div class="btn-row" style="margin-top:1.4rem">
+        <button class="btn-primary" id="recordBtn" disabled>
+          <span class="btn-icon">⏺</span>
+          <span class="spinner"></span>
+          Record Video
+        </button>
+        <button class="btn-danger" id="stopBtn" disabled>
+          ⏹ &nbsp; Stop & Download
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>StoryFrame AI &nbsp;—&nbsp; Canvas + MediaRecorder + Gemini</footer>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+// ── DOM refs ────────────────────────────────────────────────
+const promptInput  = document.getElementById("promptInput");
+const generateBtn  = document.getElementById("generateBtn");
+const clearBtn     = document.getElementById("clearBtn");
+const statusBar    = document.getElementById("statusBar");
+const statusText   = document.getElementById("statusText");
+const storyPanel   = document.getElementById("storyPanel");
+const storyTitle   = document.getElementById("storyTitle");
+const storyBody    = document.getElementById("storyBody");
+const storyMeta    = document.getElementById("storyMeta");
+const canvas       = document.getElementById("storyCanvas");
+const canvasOverlay= document.getElementById("canvasOverlay");
+const recBadge     = document.getElementById("recBadge");
+const recordBtn    = document.getElementById("recordBtn");
+const stopBtn      = document.getElementById("stopBtn");
+const progressWrap = document.getElementById("progressWrap");
+const progressFill = document.getElementById("progressFill");
+const progressLabel= document.getElementById("progressLabel");
+const ctx          = canvas.getContext("2d");
+
+// ── State ───────────────────────────────────────────────────
+let storyData = null;
+let particles = [];
+let floatingWords = [];
+let mediaRecorder = null;
+let recordedChunks = [];
+let animationId = null;
+let animFrame = 0;
+let recordingStartTime = null;
+let progressInterval = null;
+const RECORD_DURATION = 10; // seconds
+
+// ── Mood → colour palette ───────────────────────────────────
+const PALETTES = {
+  mysterious: { bg: "#060412", primary: "#9b6bdf", secondary: "#4a1fa8", accent: "#e8c3ff" },
+  joyful:     { bg: "#0a0a04", primary: "#e8c840", secondary: "#d47b20", accent: "#fff0a0" },
+  melancholic:{ bg: "#03090f", primary: "#4a8fbf", secondary: "#1a3d5c", accent: "#b0d4f0" },
+  thrilling:  { bg: "#0f0404", primary: "#d44a4a", secondary: "#7a1515", accent: "#ffc0c0" },
+  whimsical:  { bg: "#05080a", primary: "#40c8b0", secondary: "#1a6b5c", accent: "#b0fff0" },
+  dark:       { bg: "#030303", primary: "#888888", secondary: "#333333", accent: "#cccccc" },
+  hopeful:    { bg: "#060a04", primary: "#6abf50", secondary: "#28601a", accent: "#c0f0b0" },
+};
+const DEFAULT_PALETTE = PALETTES.mysterious;
+
+// ── Status helpers ──────────────────────────────────────────
+function setStatus(msg, type = "") {
+  statusText.textContent = msg;
+  statusBar.className = "status-bar show" + (type ? " " + type : "");
+}
+function clearStatus() { statusBar.className = "status-bar"; }
+
+// ── Generate Story ──────────────────────────────────────────
+generateBtn.addEventListener("click", async () => {
+  const prompt = promptInput.value.trim();
+  if (!prompt) { setStatus("Please enter a story prompt first.", "warn"); return; }
+
+  generateBtn.classList.add("loading");
+  generateBtn.disabled = true;
+  setStatus("Contacting the AI oracle…");
+
+  try {
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({ error: "Network error" }));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    storyData = data;
+
+    // Show story panel
+    storyTitle.textContent = data.title || "Untitled";
+    storyBody.textContent  = data.story || "No story generated.";
+
+    // Build tags
+    storyMeta.innerHTML = "";
+    const moodTag = document.createElement("span");
+    moodTag.className = "tag mood";
+    moodTag.textContent = (data.mood || "unknown").toUpperCase();
+    storyMeta.appendChild(moodTag);
+    (data.keywords || []).forEach(kw => {
+      const t = document.createElement("span");
+      t.className = "tag"; t.textContent = kw;
+      storyMeta.appendChild(t);
+    });
+
+    storyPanel.classList.add("show");
+
+    if (data.fallback) {
+      setStatus("⚠ " + (data.fallbackReason || "Demo mode — add GEMINI_API_KEY for live generation."), "warn");
+    } else {
+      setStatus("Story generated successfully.", "");
+    }
+
+    // Boot animation
+    initAnimation(data);
+    canvasOverlay.style.opacity = "0";
+    recordBtn.disabled = false;
+
+  } catch (err) {
+    setStatus("Error: " + err.message, "error");
+  } finally {
+    generateBtn.classList.remove("loading");
+    generateBtn.disabled = false;
+  }
+});
+
+// ── Clear ──────────────────────────────────────────────────
+clearBtn.addEventListener("click", () => {
+  promptInput.value = "";
+  storyPanel.classList.remove("show");
+  clearStatus();
+  storyData = null;
+  recordBtn.disabled = true;
+  stopAnimation();
+  canvasOverlay.style.opacity = "1";
+  initIdleCanvas();
+});
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS ANIMATION ENGINE
+// ═══════════════════════════════════════════════════════════
+
+const W = canvas.width;
+const H = canvas.height;
+
+// ── Particle class ──────────────────────────────────────────
+class Particle {
+  constructor(palette) {
+    this.reset(palette);
+  }
+  reset(palette) {
+    this.x  = Math.random() * W;
+    this.y  = Math.random() * H;
+    this.r  = Math.random() * 2.5 + 0.5;
+    this.vx = (Math.random() - 0.5) * 0.6;
+    this.vy = (Math.random() - 0.5) * 0.6;
+    this.life = 1;
+    this.decay = Math.random() * 0.003 + 0.0005;
+    this.color = palette.primary;
+    this.alpha = Math.random() * 0.7 + 0.1;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life -= this.decay;
+    if (this.x < 0) this.x = W;
+    if (this.x > W) this.x = 0;
+    if (this.y < 0) this.y = H;
+    if (this.y > H) this.y = 0;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = this.life * this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── Word floater ────────────────────────────────────────────
+class FloatingWord {
+  constructor(text, palette) {
+    this.text = text;
+    this.x = Math.random() * (W - 200) + 100;
+    this.y = H + 40;
+    this.targetY = Math.random() * (H * 0.6) + H * 0.1;
+    this.vy = -(Math.random() * 0.6 + 0.3);
+    this.alpha = 0;
+    this.fadeIn = true;
+    this.size = Math.random() * 16 + 14;
+    this.color = Math.random() > 0.5 ? palette.accent : palette.primary;
+    this.rotation = (Math.random() - 0.5) * 0.2;
+    this.done = false;
+  }
+  update() {
+    if (this.y > this.targetY) {
+      this.y += this.vy;
+      if (this.alpha < 0.8) this.alpha += 0.02;
+    } else {
+      if (this.alpha > 0) this.alpha -= 0.005;
+      else this.done = true;
+    }
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.globalAlpha = this.alpha;
+    ctx.fillStyle = this.color;
+    ctx.font = `300 ${this.size}px 'Cormorant Garamond', Georgia, serif`;
+    ctx.fillText(this.text, 0, 0);
+    ctx.restore();
+  }
+}
+
+// ── Shooting star ───────────────────────────────────────────
+function drawShootingStar(ctx, t, palette) {
+  const freq = 0.0008;
+  const phase = Math.sin(t * freq);
+  if (phase > 0.97) {
+    const progress = (phase - 0.97) / 0.03;
+    const x1 = (t * 0.05) % W;
+    const y1 = 50 + Math.sin(t * 0.0001) * 100;
+    const len = 120 * progress;
+    ctx.save();
+    const grad = ctx.createLinearGradient(x1 - len, y1, x1, y1);
+    grad.addColorStop(0, "transparent");
+    grad.addColorStop(1, palette.accent);
+    ctx.globalAlpha = progress * 0.8;
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x1 - len, y1);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── Concentric rings ────────────────────────────────────────
+function drawRings(ctx, t, palette) {
+  const cx = W / 2, cy = H / 2;
+  for (let i = 0; i < 5; i++) {
+    const r = 60 + i * 50 + Math.sin(t * 0.001 + i) * 20;
+    const alpha = 0.04 - i * 0.007;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, alpha);
+    ctx.strokeStyle = palette.primary;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── Story title on canvas ────────────────────────────────────
+function drawTitle(ctx, title, t, palette) {
+  if (!title) return;
+  const alpha = Math.min(1, (t - 60) / 120) * 0.85;
+  if (alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = palette.accent;
+  ctx.font = `italic 300 ${W * 0.038}px 'Cormorant Garamond', Georgia, serif`;
+  ctx.textAlign = "center";
+  ctx.fillText(title, W / 2, H * 0.88);
+  ctx.restore();
+}
+
+// ── Wave lines ──────────────────────────────────────────────
+function drawWaves(ctx, t, palette) {
+  for (let w = 0; w < 3; w++) {
+    ctx.save();
+    ctx.globalAlpha = 0.06 - w * 0.015;
+    ctx.strokeStyle = palette.secondary;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 4) {
+      const y = H / 2 + Math.sin(x * 0.005 + t * 0.002 + w * 1.2) * (30 + w * 20)
+                       + Math.sin(x * 0.01 - t * 0.001) * 15;
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ── MAIN ANIMATION LOOP ──────────────────────────────────────
+function animate(palette, keywords, title) {
+  animFrame++;
+
+  // Background with fade trail
+  ctx.fillStyle = palette.bg + "cc"; // slight transparency for trails
+  ctx.fillRect(0, 0, W, H);
+
+  // Visual layers (back to front)
+  drawWaves(ctx, animFrame, palette);
+  drawRings(ctx, animFrame, palette);
+  drawShootingStar(ctx, animFrame, palette);
+
+  // Particles
+  if (animFrame % 3 === 0 && particles.length < 220) {
+    particles.push(new Particle(palette));
+  }
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => { p.update(); p.draw(ctx); });
+
+  // Connections between nearby particles
+  for (let i = 0; i < particles.length; i += 2) {
+    for (let j = i + 1; j < particles.length; j += 2) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100) {
+        ctx.save();
+        ctx.globalAlpha = (1 - dist / 100) * 0.06;
+        ctx.strokeStyle = palette.primary;
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // Floating words from keywords
+  if (keywords && animFrame % 80 === 0 && keywords.length > 0) {
+    const kw = keywords[Math.floor(Math.random() * keywords.length)];
+    floatingWords.push(new FloatingWord(kw, palette));
+  }
+  floatingWords = floatingWords.filter(fw => !fw.done);
+  floatingWords.forEach(fw => { fw.update(); fw.draw(ctx); });
+
+  // Story title watermark
+  drawTitle(ctx, title, animFrame, palette);
+
+  // Vignette
+  const vignette = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.8);
+  vignette.addColorStop(0, "transparent");
+  vignette.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
+
+  animationId = requestAnimationFrame(() => animate(palette, keywords, title));
+}
+
+// ── Stop animation ───────────────────────────────────────────
+function stopAnimation() {
+  if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+  particles = []; floatingWords = []; animFrame = 0;
+}
+
+// ── Boot story animation ─────────────────────────────────────
+function initAnimation(data) {
+  stopAnimation();
+  const palette = PALETTES[data.mood] || DEFAULT_PALETTE;
+  particles = [];
+  floatingWords = [];
+  // Fill bg first
+  ctx.fillStyle = palette.bg;
+  ctx.fillRect(0, 0, W, H);
+  animate(palette, data.keywords || [], data.title || "");
+}
+
+// ── Idle canvas (before any story) ──────────────────────────
+function initIdleCanvas() {
+  stopAnimation();
+  const palette = DEFAULT_PALETTE;
+  particles = [];
+  // Just a gentle drift
+  function idleLoop() {
+    ctx.fillStyle = palette.bg + "dd";
+    ctx.fillRect(0, 0, W, H);
+    drawWaves(ctx, animFrame++, palette);
+    if (animFrame % 4 === 0 && particles.length < 80) particles.push(new Particle(palette));
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => { p.update(); p.draw(ctx); });
+    const vignette = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.8);
+    vignette.addColorStop(0, "transparent");
+    vignette.addColorStop(1, "rgba(0,0,0,0.6)");
+    ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
+    animationId = requestAnimationFrame(idleLoop);
+  }
+  ctx.fillStyle = palette.bg; ctx.fillRect(0, 0, W, H);
+  idleLoop();
+}
+
+// ═══════════════════════════════════════════════════════════
+// VIDEO RECORDING
+// ═══════════════════════════════════════════════════════════
+
+recordBtn.addEventListener("click", () => {
+  if (!storyData) return;
+  startRecording();
+});
+
+stopBtn.addEventListener("click", () => {
+  stopRecording();
+});
+
+function startRecording() {
+  const mimeType = getSupportedMimeType();
+  if (!mimeType) {
+    setStatus("MediaRecorder not supported in this browser.", "error");
+    return;
+  }
+
+  recordedChunks = [];
+
+  try {
+    const stream = canvas.captureStream(30); // 30 fps
+    mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 4_000_000 });
+  } catch (e) {
+    setStatus("Failed to start recording: " + e.message, "error");
+    return;
+  }
+
+  mediaRecorder.ondataavailable = e => {
+    if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: mimeType });
+    downloadBlob(blob, mimeType);
+    resetRecordingUI();
+  };
+
+  mediaRecorder.start(100); // collect data every 100ms
+  recordingStartTime = Date.now();
+
+  // UI
+  recBadge.classList.add("show");
+  recordBtn.classList.add("loading");
+  recordBtn.disabled = true;
+  stopBtn.disabled = false;
+  progressWrap.classList.add("show");
+
+  setStatus("Recording… click Stop & Download when ready.", "");
+
+  // Progress bar
+  progressInterval = setInterval(() => {
+    const elapsed = (Date.now() - recordingStartTime) / 1000;
+    const pct = Math.min((elapsed / RECORD_DURATION) * 100, 100);
+    progressFill.style.width = pct + "%";
+    progressLabel.textContent = `Recording — ${elapsed.toFixed(1)}s`;
+
+    if (elapsed >= RECORD_DURATION) {
+      stopRecording();
+    }
+  }, 100);
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+  clearInterval(progressInterval);
+}
+
+function resetRecordingUI() {
+  recBadge.classList.remove("show");
+  recordBtn.classList.remove("loading");
+  recordBtn.disabled = false;
+  stopBtn.disabled = true;
+  progressWrap.classList.remove("show");
+  progressFill.style.width = "0%";
+  setStatus("Video downloaded successfully.", "");
+}
+
+function downloadBlob(blob, mimeType) {
+  const ext = mimeType.includes("mp4") ? "mp4" : "webm";
+  const title = storyData?.title?.replace(/[^a-z0-9]/gi, "_").toLowerCase() || "story";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `storyframe_${title}.${ext}`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function getSupportedMimeType() {
+  const types = [
+    "video/webm;codecs=vp9,opus",
+    "video/webm;codecs=vp8,opus",
+    "video/webm",
+    "video/mp4",
+  ];
+  for (const t of types) {
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  }
+  return null;
+}
+
+// ── Boot ─────────────────────────────────────────────────────
+initIdleCanvas();
+</script>
+</body>
+</html>
